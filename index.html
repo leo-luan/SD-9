@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Sistemas Distribuídos - Aula09</title>
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/night.css">
+
+		<!-- Theme used for syntax highlighting of code -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</head>
+	<body>
+		<div class="reveal">
+			<div class="slides">
+				<section>
+					<p>
+						Universidade do Estado de Mato Grosso <br />
+						<em>Campus</em> Cáceres <br />
+						Faculdade de Ciências Exatas <br/>
+						Bacharelado em Ciência da Computação
+					</p>
+					<br />
+					<h2>Sistemas Distribuídos</h2>
+					<h4>Capítulo 6 - Exclusão Mútua (Parte 3)</h4>
+					<br />
+					<p>
+						Leonardo Luan Martins da Silva <br />
+						29 de abril de 2019
+					</p>
+				</section>
+
+				<section style="text-align: left; font-size: 90%">
+					<h3>Contextualização</h3>
+					<ul>
+						<li style='margin-bottom: 25px'>Processos <strong>concorrentes</strong> podem tentar acessar simultaneamente os mesmos recursos.</li>
+						<li style='margin-bottom: 25px'>Para evitar que tais acessos concorrentes corrompam o recurso ou o tornem inconsistente, são necessárias soluções que garantam acesso <strong>mutuamente exclusivo</strong> pelos processos.</li>
+						<li>Um mecanismo de exclusão mútua deve evitar <strong>deadlocks</strong> e <strong>inanição</strong>.</li>
+					</ul>
+				</section>
+
+				<section>
+					<br/><br/><br/><br/><br/>
+					<h3>Algoritmos de exclusão mútua</h3>
+				</section>
+
+				<section style="text-align: left; font-size: 80%">
+					<h3>Algoritmo centralizado</h3>
+					<section>
+						<ul>
+							<li style='margin-bottom: 25px'>Um processo é eleito como o coordenador.</li>
+							<li style='margin-bottom: 25px'>Sempre que um processo quiser acessar um recurso compartilhado, envia uma mensagem de requisição ao coordenador declarando qual recurso quer acessar e solicitando permissão.</li>
+							<li>Se nenhum outro processo estiver acessando aquele recurso naquele momento, o coordenador responde concedendo permissão.</li>
+						</ul>
+					</section>
+					<section>
+						<ul>
+							<li style='margin-bottom: 25px'>Se um processo estiver acessando o recurso, o coordenador não dá permissão. Existem várias maneiras de negar a permissão, mas a mais comum é não fornecer nenhuma resposta, deixando o processo requisitante bloqueado, e criar uma fila de espera.</li>
+							<li>Quando o processo que está acessando o recurso encerra a utilização, envia uma mensagem ao coordenador, para que o recurso seja liberado.</li>
+						</ul>
+					</section>
+				</section>
+
+				<section style="text-align: left; font-size: 80%">
+					<h3>Algoritmo distribuído</h3>
+					<section>
+						<ul>
+							<li style='margin-bottom: 25px'>Quando um processo quer acessar um recurso compartilhado, monta uma mensagem que contém, o nome do recurso, seu número de processo e a hora corrente (lógica).</li>
+							<li>Após montar a mensagem, envia para todos os outros processos.</li>
+						</ul>
+					</section>
+					<section style="font-size: 90%;">
+						<ul>
+							<li style='margin-bottom: 25px'>Quando um processo recebe uma mensagem de requisição de outro processo, a ação que ele executa depende de seu próprio estado em relação ao recurso.</li>
+							<ul>
+								<li style='margin-bottom: 25px'>Se o receptor não estiver acessando o recurso e não quiser acessá-lo, devolve uma mensagem OK ao remetente.</li>
+								<li style='margin-bottom: 25px'>Se o receptor já tiver acesso ao recurso, simplesmente não responde. Em vez disso, coloca a requisição numa fila.</li>
+								<li>Se o receptor também quiser acessar o recurso, mas ainda não o fez, ele compara a marca de tempo da mensagem que chegou com a marca de tempo contida na última mensagem que enviou para todos. A mais baixa vence. Se a marca de tempo da mensagem que chegou for mais baixa, o receptor devolve OK. Senão, o receptor enfileira a requisição que está chegando e nada envia como resposta.</li>
+							</ul>
+						</ul>
+					</section>
+					<section>
+						<ul>
+							<li style='margin-bottom: 25px'>Após enviar requisições, o processo fica bloqueado e espera até que todos tenham dado permissão.</li>
+							<li style='margin-bottom: 25px'>Logo que todas as permissões são recebidas, o processo pode acessar o recurso compartilhado.</li>
+							<li>Quando concluir a utilização do recurso, envia a mensagem OK para todos os processos que estão em sua fila e remove todos da fila.</li>
+						</ul>
+					</section>
+				</section>
+
+				<section style="text-align: left; font-size: 90%">
+					<h3>Algoritmo Token Ring</h3>
+					<section>
+						<ul>
+							<li style='margin-bottom: 25px'>Um barramento lógico em forma de anel é utilizado.</li>
+							<li style='margin-bottom: 25px'>Cada processo recebe uma posição no anel. Não importa a ordem, cada processo só deve saber quem é o próximo após ele.</li>
+							<li style='margin-bottom: 25px'>Quando o anel é inicializado, o processo 0 recebe uma ficha.</li>
+							<li>A ficha circula por todo o barramento, sempre passada do processo k para o processo k + 1.</li>
+						</ul>
+					</section>
+					<section style="font-size: 90%;">
+						<ul>
+							<li style='margin-bottom: 25px'>Quando um processo adquire a ficha de seu vizinho, verifica se precisa acessar o recurso compartilhado.</li>
+							<li style='margin-bottom: 25px'>Caso necessite, o processo realiza suas tarefas, e ao finalizar libera o recurso e passa a ficha para o vizinho no anel.</li>
+							<li>Se um processo receber a ficha de seu vizinho e não estiver interessado no recurso, ele apenas passa a ficha adiante.</li>
+						</ul>
+					</section>
+				</section>
+
+				<section style="text-align: center">
+					<br/><br/><br/><br/>
+					<h5>Aguardem a chamada!<br/><br/>Até a próxima aula!</h5>
+				</section>
+
+
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+			// More info about config & dependencies:
+			// - https://github.com/hakimel/reveal.js#configuration
+			// - https://github.com/hakimel/reveal.js#dependencies
+			Reveal.initialize({
+				center: false,
+				mouseWheel: true,
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+			Reveal.configure({ slideNumber: 'c/t' });
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+	</body>
+</html>
